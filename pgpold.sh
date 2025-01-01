@@ -635,7 +635,8 @@ install_require() {
 }
 
 shon_online() {
-    echo "applev50基于xtao原始脚本修改，一键安装旧版人形和框架"
+    echo "Applev50基于xtao原始脚本修改，一键安装旧版人形和框架"
+    echo ""
     echo "改动：加入虚拟环境"
     echo "改动：安装PagerMaid版本为 1.4.12"
     echo "改动：安装Pyrogram版本为 2.0.124"
