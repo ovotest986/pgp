@@ -371,6 +371,7 @@ done
 }
 
 login_screen() {
+    source /var/lib/pagermaid/venv/bin/activate
     screen -S userbot -X quit >>/dev/null 2>&1
     screen -dmS userbot
     sleep 1
@@ -474,6 +475,8 @@ start_installation() {
         yum_screen_check
         yum_require_install
         download_repo
+	check_and_install_venv
+        setup_venv
         pypi_install
         configure
         login_screen
