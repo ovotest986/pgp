@@ -31,6 +31,9 @@ check_sys() {
 }
 
 welcome() {
+    echo "本脚本由Applev50基于xtao原始脚本修改，方便一键安装旧版人形和pyrogram框架，另加入虚拟环境的安装。"
+    echo ""
+    echo ""
     echo "一键脚本出现任何问题请转手动搭建！ xtaolabs.com"
     echo "一键脚本出现任何问题请转手动搭建！ xtaolabs.com"
     echo "一键脚本出现任何问题请转手动搭建！ xtaolabs.com"
