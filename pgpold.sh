@@ -264,6 +264,7 @@ pypi_install() {
     $PYV -m pip install -r requirements.txt >>/dev/null 2>&1
     sudo -H $PYV -m pip install --ignore-installed PyYAML >>/dev/null 2>&1
     $PYV -m pip install git+https://github.com/TeamPGM/pyrogram@1.4.13 >>/dev/null 2>&1
+    $PYV -m pip install coloredlogs >>/dev/null 2>&1
 }
 
 configure() {
