@@ -491,6 +491,8 @@ start_installation() {
         apt_screen_check
         apt_require_install
         download_repo
+	check_and_install_venv
+        setup_venv
         pypi_install
         configure
         login_screen
@@ -505,6 +507,8 @@ start_installation() {
         apt_screen_check
         debian_require_install
         download_repo
+	check_and_install_venv
+        setup_venv
         pypi_install
         configure
         login_screen
