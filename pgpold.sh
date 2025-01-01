@@ -31,7 +31,11 @@ check_sys() {
 }
 
 welcome() {
-    echo "本脚本由Applev50基于xtao原始脚本修改，方便一键安装旧版人形和pyrogram框架，另加入虚拟环境的安装。"
+    echo "本脚本由Applev50基于xtao原始脚本修改，方便一键安装旧版人形和pyrogram框架"
+    echo "改动：加入虚拟环境"
+    echo "改动：安装PagerMaid版本为 1.4.12"
+    echo "改动：安装Pyrogram版本为 2.0.124"
+    echo "改动：去掉日志记录的询问，默认不开启日志记录"
     echo ""
     echo ""
     echo "一键脚本出现任何问题请转手动搭建！ xtaolabs.com"
