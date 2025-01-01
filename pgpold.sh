@@ -260,11 +260,16 @@ download_repo() {
 
 pypi_install() {
     echo "下载安装 pypi 依赖中 . . ."
-    $PYV -m pip install --upgrade pip >>/dev/null 2>&1
-    $PYV -m pip install -r requirements.txt >>/dev/null 2>&1
-    sudo -H $PYV -m pip install --ignore-installed PyYAML >>/dev/null 2>&1
-    $PYV -m pip install git+https://github.com/TeamPGM/pyrogram@1.4.13 >>/dev/null 2>&1
-    $PYV -m pip install coloredlogs >>/dev/null 2>&1
+    echo "升级pip..."
+    $PYV -m pip install --upgrade pip
+    echo "安装 requirements.txt..."
+    $PYV -m pip install -r requirements.txt
+    echo "安装 PyYAML..."
+    sudo -H $PYV -m pip install --ignore-installed PyYAML
+    echo "安装特定版本的 Pyrogram..."
+    $PYV -m pip install git+https://github.com/TeamPGM/pyrogram@1.4.13
+    echo "安装 coloredlogs..."
+    $PYV -m pip install coloredlogs
 }
 
 configure() {
