@@ -258,6 +258,24 @@ download_repo() {
     echo "Hello World!" >/var/lib/pagermaid/public.lock
 }
 
+check_and_install_venv() {
+    echo "检查 python3-venv 安装情况..."
+    if ! dpkg -s python3-venv &> /dev/null; then
+        echo "python3-venv 未安装，正在安装..."
+        sudo apt install -y python3-venv
+    else
+        echo "python3-venv 已安装"
+    fi
+}
+
+setup_venv() {
+    echo "设置虚拟环境..."
+    python3 -m venv /var/lib/pagermaid/venv
+    source /var/lib/pagermaid/venv/bin/activate
+    export PYV=/var/lib/pagermaid/venv/bin/python3
+    echo "虚拟环境已激活"
+}
+
 pypi_install() {
     echo "下载安装 pypi 依赖中 . . ."
     echo "升级pip..."
@@ -585,6 +603,8 @@ install_require() {
         apt_python_check
         apt_screen_check
         apt_require_install
+	check_and_install_venv
+        setup_venv
         pypi_install
         systemctl_reload
         shon_online
@@ -596,6 +616,8 @@ install_require() {
         debian_python_check
         apt_screen_check
         debian_require_install
+	check_and_install_venv
+        setup_venv
         pypi_install
         systemctl_reload
         shon_online
