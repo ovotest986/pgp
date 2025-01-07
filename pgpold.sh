@@ -288,6 +288,7 @@ pypi_install() {
     $PYV -m pip install git+https://github.com/TeamPGM/pyrogram@1.4.13
     echo "安装 coloredlogs..."
     $PYV -m pip install coloredlogs
+    $PYV -m pip install requests
 }
 
 configure() {
