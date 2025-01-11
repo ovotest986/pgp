@@ -251,11 +251,11 @@ debian_require_install() {
 
 download_repo() {
     echo "下载 repository 中 . . ."
-    rm -rf /var/lib/pagermaid >>/dev/null 2>&1
-    git clone https://github.com/TeamPGM/PagerMaid-Pyro.git /var/lib/pagermaid >>/dev/null 2>&1
-    cd /var/lib/pagermaid >>/dev/null 2>&1
+    rm -rf /var/lib/pgp >>/dev/null 2>&1
+    git clone https://github.com/TeamPGM/PagerMaid-Pyro.git /var/lib/pgp >>/dev/null 2>&1
+    cd /var/lib/pgp >>/dev/null 2>&1
     git checkout d461cbc >>/dev/null 2>&1
-    echo "Hello World!" >/var/lib/pagermaid/public.lock
+    echo "Hello World!" >/var/lib/pgp/public.lock
 }
 
 check_and_install_venv() {
@@ -270,9 +270,9 @@ check_and_install_venv() {
 
 setup_venv() {
     echo "设置虚拟环境..."
-    python3 -m venv /var/lib/pagermaid/venv
-    source /var/lib/pagermaid/venv/bin/activate
-    export PYV=/var/lib/pagermaid/venv/bin/python3
+    python3 -m venv /var/lib/pgp/venv
+    source /var/lib/pgp/venv/bin/activate
+    export PYV=/var/lib/pgp/venv/bin/python3
     echo "虚拟环境已激活"
 }
 
@@ -372,16 +372,16 @@ done
 }
 
 login_screen() {
-    source /var/lib/pagermaid/venv/bin/activate
+    source /var/lib/pgp/venv/bin/activate
     screen -S userbot -X quit >>/dev/null 2>&1
     screen -dmS userbot
     sleep 1
-    screen -x -S userbot -p 0 -X stuff "cd /var/lib/pagermaid && $PYV -m pagermaid"
+    screen -x -S userbot -p 0 -X stuff "cd /var/lib/pgp && $PYV -m pagermaid"
     screen -x -S userbot -p 0 -X stuff $'\n'
     sleep 3
     if [ "$(ps -def | grep [p]agermaid | grep -v grep)" == "" ]; then
         echo "PagerMaid 运行时发生错误，错误信息："
-        cd /var/lib/pagermaid && $PYV -m pagermaid >err.log
+        cd /var/lib/pgp && $PYV -m pagermaid >err.log
         cat err.log
         screen -S userbot -X quit >>/dev/null 2>&1
         exit 1
@@ -406,7 +406,7 @@ login_screen() {
         
         if [ "$(ps -def | grep [p]agermaid | grep -v grep)" == "" ]; then
             echo "手机号输入错误！请确认您是否带了区号（中国号码为 +86 如 +8618888888888）"
-            screen -x -S userbot -p 0 -X stuff "cd /var/lib/pagermaid && $PYV -m pagermaid"
+            screen -x -S userbot -p 0 -X stuff "cd /var/lib/pgp && $PYV -m pagermaid"
             screen -x -S userbot -p 0 -X stuff $'\n'
             continue
         fi
@@ -456,14 +456,14 @@ systemctl_reload() {
     WantedBy=multi-user.target
     [Service]
     Type=simple
-    WorkingDirectory=/var/lib/pagermaid
+    WorkingDirectory=/var/lib/pgp
     ExecStart=$PYV -m pagermaid
     Restart=always
-    " >/etc/systemd/system/pagermaid.service
-    chmod 755 pagermaid.service >>/dev/null 2>&1
+    " >/etc/systemd/system/pgp.service
+    chmod 755 pgp.service >>/dev/null 2>&1
     systemctl daemon-reload >>/dev/null 2>&1
-    systemctl start pagermaid >>/dev/null 2>&1
-    systemctl enable pagermaid >>/dev/null 2>&1
+    systemctl start pgp >>/dev/null 2>&1
+    systemctl enable pgp >>/dev/null 2>&1
 }
 
 start_installation() {
@@ -522,15 +522,15 @@ start_installation() {
 }
 
 cleanup() {
-    if [ ! -x "/var/lib/pagermaid" ]; then
+    if [ ! -x "/var/lib/pgp" ]; then
         echo "目录不存在不需要卸载。"
     else
         echo "正在关闭 PagerMaid . . ."
-        systemctl disable pagermaid >>/dev/null 2>&1
-        systemctl stop pagermaid >>/dev/null 2>&1
+        systemctl disable pgp >>/dev/null 2>&1
+        systemctl stop pgp >>/dev/null 2>&1
         echo "正在删除 PagerMaid 文件 . . ."
-        rm -rf /etc/systemd/system/pagermaid.service >>/dev/null 2>&1
-        rm -rf /var/lib/pagermaid >>/dev/null 2>&1
+        rm -rf /etc/systemd/system/pgp.service >>/dev/null 2>&1
+        rm -rf /var/lib/pgp >>/dev/null 2>&1
         echo "卸载完成 . . ."
     fi
 }
@@ -541,14 +541,14 @@ reinstall() {
 }
 
 cleansession() {
-    if [ ! -x "/var/lib/pagermaid" ]; then
+    if [ ! -x "/var/lib/pgp" ]; then
         echo "目录不存在请重新安装 PagerMaid。"
         exit 1
     fi
     echo "正在关闭 PagerMaid . . ."
-    systemctl stop pagermaid >>/dev/null 2>&1
+    systemctl stop pgp >>/dev/null 2>&1
     echo "正在删除账户授权文件 . . ."
-    rm -rf /var/lib/pagermaid/pagermaid.session >>/dev/null 2>&1
+    rm -rf /var/lib/pgp/pagermaid.session >>/dev/null 2>&1
     echo "请进行重新登陆. . ."
     if [ "$release" = "centos" ]; then
         yum_python_check
@@ -563,13 +563,13 @@ cleansession() {
         echo "目前暂时不支持此系统。"
     fi
     login_screen
-    systemctl start pagermaid >>/dev/null 2>&1
+    systemctl start pgp >>/dev/null 2>&1
 }
 
 stop_pager() {
     echo ""
     echo "正在关闭 PagerMaid . . ."
-    systemctl stop pagermaid >>/dev/null 2>&1
+    systemctl stop pgp >>/dev/null 2>&1
     echo ""
     sleep 3
     shon_online
@@ -578,7 +578,7 @@ stop_pager() {
 start_pager() {
     echo ""
     echo "正在启动 PagerMaid . . ."
-    systemctl start pagermaid >>/dev/null 2>&1
+    systemctl start pgp >>/dev/null 2>&1
     echo ""
     sleep 3
     shon_online
@@ -587,7 +587,7 @@ start_pager() {
 restart_pager() {
     echo ""
     echo "正在重新启动 PagerMaid . . ."
-    systemctl restart pagermaid >>/dev/null 2>&1
+    systemctl restart pgp >>/dev/null 2>&1
     echo ""
     sleep 3
     shon_online
