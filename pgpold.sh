@@ -295,6 +295,7 @@ configure() {
     config_file=config.yml
     echo "生成配置文件中 . . ."
     cp config.gen.yml config.yml
+    sed -i 's/allow_analytic: "True"/allow_analytic: "False"/' $config_file
     printf "请输入应用程序 api_id（不懂请直接回车）："
     read -r api_id <&1
     sed -i "s/ID_HERE/$api_id/" $config_file
