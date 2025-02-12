@@ -637,7 +637,7 @@ install_require() {
 }
 
 shon_online() {
-    echo "Applev50基于xtao原始脚本修改，一键安装旧版人形和框架"
+    echo -e "\033[1;34mApplev50基于xtao原始脚本修改，一键安装旧版人形和框架\033[0m"
     echo ""
     echo -e "\033[1;34m改动：加入虚拟环境\033[0m"
     echo -e "\033[1;34m改动：安装PagerMaid版本为 1.4.12\033[0m"
