@@ -12,6 +12,9 @@ then
 	exit 1
 fi
 
+# 全局变量用于存储安装名称
+install_name=""
+
 check_sys() {
     if [[ -f /etc/redhat-release ]]; then
         release="centos"
@@ -29,6 +32,33 @@ check_sys() {
         release="centos"
     fi
 }
+
+# 新增：获取用户自定义的安装文件夹名称
+ask_install_name() {
+    read -p "请输入安装文件夹和进程名称 (默认为 pgp): " user_input_name
+    if [ -z "$user_input_name" ]; then
+        install_name="pgp"
+    else
+        install_name="$user_input_name"
+    fi
+    echo "操作将在目录 /var/lib/$install_name 中进行。"
+}
+
+# 新增：获取用户要管理的文件夹名称
+ask_manage_name() {
+    read -p "请输入您要管理的安装文件夹和进程名称 (例如 pgp): " user_input_name
+    if [ -z "$user_input_name" ]; then
+        echo "错误：必须输入要管理的名称。"
+        exit 1
+    fi
+    install_name="$user_input_name"
+    # 检查实例是否存在
+    if [ ! -d "/var/lib/$install_name" ]; then
+        echo "错误：安装目录 /var/lib/$install_name 不存在。"
+        exit 1
+    fi
+}
+
 
 welcome() {
     echo "一键脚本出现任何问题请转手动搭建！ xtaolabs.com"
@@ -251,11 +281,11 @@ debian_require_install() {
 
 download_repo() {
     echo "下载 repository 中 . . ."
-    rm -rf /var/lib/pgp >>/dev/null 2>&1
-    git clone https://github.com/TeamPGM/PagerMaid-Pyro.git /var/lib/pgp >>/dev/null 2>&1
-    cd /var/lib/pgp >>/dev/null 2>&1
+    rm -rf /var/lib/$install_name >>/dev/null 2>&1
+    git clone https://github.com/TeamPGM/PagerMaid-Pyro.git /var/lib/$install_name >>/dev/null 2>&1
+    cd /var/lib/$install_name >>/dev/null 2>&1
     git checkout d461cbc >>/dev/null 2>&1
-    echo "Hello World!" >/var/lib/pgp/public.lock
+    echo "Hello World!" >/var/lib/$install_name/public.lock
 }
 
 check_and_install_venv() {
@@ -270,9 +300,9 @@ check_and_install_venv() {
 
 setup_venv() {
     echo "设置虚拟环境..."
-    python3 -m venv /var/lib/pgp/venv
-    source /var/lib/pgp/venv/bin/activate
-    export PYV=/var/lib/pgp/venv/bin/python3
+    python3 -m venv /var/lib/$install_name/venv
+    source /var/lib/$install_name/venv/bin/activate
+    export PYV=/var/lib/$install_name/venv/bin/python3
     echo "虚拟环境已激活"
 }
 
@@ -292,6 +322,7 @@ pypi_install() {
 }
 
 configure() {
+    cd /var/lib/$install_name >>/dev/null 2>&1
     config_file=config.yml
     echo "生成配置文件中 . . ."
     cp config.gen.yml config.yml
@@ -323,30 +354,10 @@ configure() {
     else
         sed -i "s/zh-CN/$application_tts/" $config_file
     fi
-    # printf "启用日志记录？ [Y/n]"
-    # read -r logging_confirmation <&1
-    # case $logging_confirmation in
-    # [yY][eE][sS] | [yY])
-    #     printf "请输入您的日志记录群组/频道的 ChatID （如果要发送给 原 PagerMaid 作者 ，请按Enter）："
-    #     read -r log_chatid <&1
-    #     if [ -z "$log_chatid" ]; then
-    #         echo "LOG 将发送到 原 PagerMaid 作者."
-    #     else
-    #         sed -i "s/503691334/$log_chatid/" $config_file
-    #     fi
-    #     sed -i "s/log: False/log: True/" $config_file
-    #     ;;
-    # [nN][oO] | [nN])
-    #     echo "安装过程继续 . . ."
-    #     ;;
-    # *)
-    #     echo "输入错误 . . ."
-    #     exit 1
-    #     ;;
-    # esac
 }
 
 read_checknum() {
+    local screen_session_name="$1-userbot"
     while :; do
     read -p "请输入您的登录验证码: " checknum
     if [ "$checknum" == "" ]; then
@@ -358,33 +369,34 @@ read_checknum() {
         continue
 
     else
-        screen -x -S userbot -p 0 -X stuff "$checknum"
-        screen -x -S userbot -p 0 -X stuff $'\n'
+        screen -x -S $screen_session_name -p 0 -X stuff "$checknum"
+        screen -x -S $screen_session_name -p 0 -X stuff $'\n'
         break
     fi
 done
     read -p "有没有二次登录验证码？ [Y/n]" choi
     if [ "$choi" == "y" ] || [ "$choi" == "Y" ]; then
         read -p "请输入您的二次登录验证码: " twotimepwd
-        screen -x -S userbot -p 0 -X stuff "$twotimepwd"
-        screen -x -S userbot -p 0 -X stuff $'\n'
+        screen -x -S $screen_session_name -p 0 -X stuff "$twotimepwd"
+        screen -x -S $screen_session_name -p 0 -X stuff $'\n'
     fi
     
 }
 
 login_screen() {
-    source /var/lib/pgp/venv/bin/activate
-    screen -S userbot -X quit >>/dev/null 2>&1
-    screen -dmS userbot
+    export PYV=/var/lib/$install_name/venv/bin/python3
+    local screen_session_name="$install_name-userbot"
+    screen -S $screen_session_name -X quit >>/dev/null 2>&1
+    screen -dmS $screen_session_name
     sleep 1
-    screen -x -S userbot -p 0 -X stuff "cd /var/lib/pgp && $PYV -m pagermaid"
-    screen -x -S userbot -p 0 -X stuff $'\n'
+    screen -x -S $screen_session_name -p 0 -X stuff "cd /var/lib/$install_name && $PYV -m pagermaid"
+    screen -x -S $screen_session_name -p 0 -X stuff $'\n'
     sleep 3
     if [ "$(ps -def | grep [p]agermaid | grep -v grep)" == "" ]; then
         echo "PagerMaid 运行时发生错误，错误信息："
-        cd /var/lib/pgp && $PYV -m pagermaid >err.log
+        cd /var/lib/$install_name && $PYV -m pagermaid >err.log
         cat err.log
-        screen -S userbot -X quit >>/dev/null 2>&1
+        screen -S $screen_session_name -X quit >>/dev/null 2>&1
         exit 1
     fi
     while :; do
@@ -398,17 +410,17 @@ login_screen() {
             continue
         fi
 
-        screen -x -S userbot -p 0 -X stuff "$phonenum"
-        screen -x -S userbot -p 0 -X stuff $'\n'
-        screen -x -S userbot -p 0 -X stuff "y"
-        screen -x -S userbot -p 0 -X stuff $'\n'
+        screen -x -S $screen_session_name -p 0 -X stuff "$phonenum"
+        screen -x -S $screen_session_name -p 0 -X stuff $'\n'
+        screen -x -S $screen_session_name -p 0 -X stuff "y"
+        screen -x -S $screen_session_name -p 0 -X stuff $'\n'
 
         sleep 2
         
         if [ "$(ps -def | grep [p]agermaid | grep -v grep)" == "" ]; then
             echo "手机号输入错误！请确认您是否带了区号（中国号码为 +86 如 +8618888888888）"
-            screen -x -S userbot -p 0 -X stuff "cd /var/lib/pgp && $PYV -m pagermaid"
-            screen -x -S userbot -p 0 -X stuff $'\n'
+            screen -x -S $screen_session_name -p 0 -X stuff "cd /var/lib/$install_name && $PYV -m pagermaid"
+            screen -x -S $screen_session_name -p 0 -X stuff $'\n'
             continue
         fi
 
@@ -420,54 +432,62 @@ login_screen() {
 
         read -p "请输入您的登录验证码: " checknum
         if [ "$checknum" == "" ]; then
-            read_checknum
+            read_checknum $install_name
             break
         fi
 
         read -p "请再次输入您的登录验证码：" checknum2
         if [ "$checknum" != "$checknum2" ]; then
             echo "两次验证码不一致！请重新输入您的登录验证码"
-            read_checknum
+            read_checknum $install_name
             break
         else
-            screen -x -S userbot -p 0 -X stuff "$checknum"
-            screen -x -S userbot -p 0 -X stuff $'\n'
+            screen -x -S $screen_session_name -p 0 -X stuff "$checknum"
+            screen -x -S $screen_session_name -p 0 -X stuff $'\n'
         fi
 
         read -p "有没有二次登录验证码？ [Y/n]" choi
         if [ "$choi" == "y" ] || [ "$choi" == "Y" ]; then
             read -p "请输入您的二次登录验证码: " twotimepwd
-            screen -x -S userbot -p 0 -X stuff "$twotimepwd"
-            screen -x -S userbot -p 0 -X stuff $'\n'
+            screen -x -S $screen_session_name -p 0 -X stuff "$twotimepwd"
+            screen -x -S $screen_session_name -p 0 -X stuff $'\n'
             break
         else
             break
         fi
     done
     sleep 5
-    screen -S userbot -X quit >>/dev/null 2>&1
+    screen -S $screen_session_name -X quit >>/dev/null 2>&1
 }
 
 systemctl_reload() {
-    echo "正在写入系统进程守护 . . ."
+    local service_name="$install_name.service"
+    local python_path="/var/lib/$install_name/venv/bin/python3"
+    echo "正在写入系统进程守护: $service_name . . ."
     echo "[Unit]
-    Description=PagerMaid-Pyro telegram utility daemon
-    After=network.target
-    [Install]
-    WantedBy=multi-user.target
-    [Service]
-    Type=simple
-    WorkingDirectory=/var/lib/pgp
-    ExecStart=$PYV -m pagermaid
-    Restart=always
-    " >/etc/systemd/system/pgp.service
-    chmod 755 pgp.service >>/dev/null 2>&1
+Description=PagerMaid-Pyro telegram utility daemon for $install_name
+After=network.target
+[Install]
+WantedBy=multi-user.target
+[Service]
+Type=simple
+WorkingDirectory=/var/lib/$install_name
+ExecStart=$python_path -m pagermaid
+Restart=always
+User=root
+" >/etc/systemd/system/$service_name
+    chmod 755 /etc/systemd/system/$service_name >>/dev/null 2>&1
     systemctl daemon-reload >>/dev/null 2>&1
-    systemctl start pgp >>/dev/null 2>&1
-    systemctl enable pgp >>/dev/null 2>&1
+    systemctl start $install_name >>/dev/null 2>&1
+    systemctl enable $install_name >>/dev/null 2>&1
 }
 
 start_installation() {
+    ask_install_name
+    if [ -d "/var/lib/$install_name" ]; then
+        echo "错误：目录 /var/lib/$install_name 已存在，请选择其他名称或先卸载。"
+        exit 1
+    fi
     if [ "$release" = "centos" ]; then
         echo "系统检测通过。"
         welcome
@@ -483,7 +503,7 @@ start_installation() {
         configure
         login_screen
         systemctl_reload
-        echo "PagerMaid 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
+        echo "PagerMaid ($install_name) 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
     elif [ "$release" = "ubuntu" ]; then
         echo "系统检测通过。"
         welcome
@@ -499,7 +519,7 @@ start_installation() {
         configure
         login_screen
         systemctl_reload
-        echo "PagerMaid 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
+        echo "PagerMaid ($install_name) 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
     elif [ "$release" = "debian" ]; then
         echo "系统检测通过。"
         welcome
@@ -515,7 +535,7 @@ start_installation() {
         configure
         login_screen
         systemctl_reload
-        echo "PagerMaid 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
+        echo "PagerMaid ($install_name) 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
     else
         echo "目前暂时不支持此系统。"
     fi
@@ -523,33 +543,90 @@ start_installation() {
 }
 
 cleanup() {
-    if [ ! -x "/var/lib/pgp" ]; then
-        echo "目录不存在不需要卸载。"
-    else
-        echo "正在关闭 PagerMaid . . ."
-        systemctl disable pgp >>/dev/null 2>&1
-        systemctl stop pgp >>/dev/null 2>&1
-        echo "正在删除 PagerMaid 文件 . . ."
-        rm -rf /etc/systemd/system/pgp.service >>/dev/null 2>&1
-        rm -rf /var/lib/pgp >>/dev/null 2>&1
-        echo "卸载完成 . . ."
-    fi
+    ask_manage_name
+    echo "正在关闭 PagerMaid ($install_name) . . ."
+    systemctl disable $install_name >>/dev/null 2>&1
+    systemctl stop $install_name >>/dev/null 2>&1
+    echo "正在删除 PagerMaid 文件 ($install_name) . . ."
+    rm -rf /etc/systemd/system/$install_name.service >>/dev/null 2>&1
+    rm -rf /var/lib/$install_name >>/dev/null 2>&1
+    systemctl daemon-reload >>/dev/null 2>&1
+    echo "卸载完成 . . ."
 }
 
 reinstall() {
-    cleanup
-    start_installation
+    ask_manage_name
+    # 运行卸载逻辑
+    echo "正在关闭 PagerMaid ($install_name) . . ."
+    systemctl disable $install_name >>/dev/null 2>&1
+    systemctl stop $install_name >>/dev/null 2>&1
+    echo "正在删除 PagerMaid 文件 ($install_name) . . ."
+    rm -rf /etc/systemd/system/$install_name.service >>/dev/null 2>&1
+    rm -rf /var/lib/$install_name >>/dev/null 2>&1
+    systemctl daemon-reload >>/dev/null 2>&1
+    echo "旧实例卸载完成，即将开始重新安装..."
+    sleep 2
+    # 运行安装逻辑，但不再次询问名称
+    if [ "$release" = "centos" ]; then
+        echo "系统检测通过。"
+        welcome
+        yum_update
+        yum_git_check
+        yum_python_check
+        yum_screen_check
+        yum_require_install
+        download_repo
+	check_and_install_venv
+        setup_venv
+        pypi_install
+        configure
+        login_screen
+        systemctl_reload
+        echo "PagerMaid ($install_name) 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
+    elif [ "$release" = "ubuntu" ]; then
+        echo "系统检测通过。"
+        welcome
+        apt_update
+        apt_git_check
+        apt_python_check
+        apt_screen_check
+        apt_require_install
+        download_repo
+	check_and_install_venv
+        setup_venv
+        pypi_install
+        configure
+        login_screen
+        systemctl_reload
+        echo "PagerMaid ($install_name) 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
+    elif [ "$release" = "debian" ]; then
+        echo "系统检测通过。"
+        welcome
+        apt_update
+        apt_git_check
+        debian_python_check
+        apt_screen_check
+        debian_require_install
+        download_repo
+	check_and_install_venv
+        setup_venv
+        pypi_install
+        configure
+        login_screen
+        systemctl_reload
+        echo "PagerMaid ($install_name) 已经安装完毕 在telegram对话框中输入 ,help 并发送查看帮助列表"
+    else
+        echo "目前暂时不支持此系统。"
+    fi
+    exit 1
 }
 
 cleansession() {
-    if [ ! -x "/var/lib/pgp" ]; then
-        echo "目录不存在请重新安装 PagerMaid。"
-        exit 1
-    fi
-    echo "正在关闭 PagerMaid . . ."
-    systemctl stop pgp >>/dev/null 2>&1
+    ask_manage_name
+    echo "正在关闭 PagerMaid ($install_name) . . ."
+    systemctl stop $install_name >>/dev/null 2>&1
     echo "正在删除账户授权文件 . . ."
-    rm -rf /var/lib/pgp/pagermaid.session >>/dev/null 2>&1
+    rm -rf /var/lib/$install_name/pagermaid.session >>/dev/null 2>&1
     echo "请进行重新登陆. . ."
     if [ "$release" = "centos" ]; then
         yum_python_check
@@ -564,81 +641,50 @@ cleansession() {
         echo "目前暂时不支持此系统。"
     fi
     login_screen
-    systemctl start pgp >>/dev/null 2>&1
+    systemctl start $install_name >>/dev/null 2>&1
+    echo "重新登录完成，PagerMaid ($install_name) 已启动。"
 }
 
 stop_pager() {
+    ask_manage_name
     echo ""
-    echo "正在关闭 PagerMaid . . ."
-    systemctl stop pgp >>/dev/null 2>&1
+    echo "正在关闭 PagerMaid ($install_name) . . ."
+    systemctl stop $install_name >>/dev/null 2>&1
     echo ""
     sleep 3
     shon_online
 }
 
 start_pager() {
+    ask_manage_name
     echo ""
-    echo "正在启动 PagerMaid . . ."
-    systemctl start pgp >>/dev/null 2>&1
+    echo "正在启动 PagerMaid ($install_name) . . ."
+    systemctl start $install_name >>/dev/null 2>&1
     echo ""
     sleep 3
     shon_online
 }
 
 restart_pager() {
+    ask_manage_name
     echo ""
-    echo "正在重新启动 PagerMaid . . ."
-    systemctl restart pgp >>/dev/null 2>&1
+    echo "正在重新启动 PagerMaid ($install_name) . . ."
+    systemctl restart $install_name >>/dev/null 2>&1
     echo ""
     sleep 3
     shon_online
 }
 
 install_require() {
-    if [ "$release" = "centos" ]; then
-        echo "系统检测通过。"
-        yum_update
-        yum_git_check
-        yum_python_check
-        yum_screen_check
-        yum_require_install
-        pypi_install
-        systemctl_reload
-        shon_online
-    elif [ "$release" = "ubuntu" ]; then
-        echo "系统检测通过。"
-        apt_update
-        apt_git_check
-        apt_python_check
-        apt_screen_check
-        apt_require_install
-	check_and_install_venv
-        setup_venv
-        pypi_install
-        systemctl_reload
-        shon_online
-    elif [ "$release" = "debian" ]; then
-        echo "系统检测通过。"
-        welcome
-        apt_update
-        apt_git_check
-        debian_python_check
-        apt_screen_check
-        debian_require_install
-	check_and_install_venv
-        setup_venv
-        pypi_install
-        systemctl_reload
-        shon_online
-    else
-        echo "目前暂时不支持此系统。"
-    fi
-    exit 1
+    echo "此功能已集成到安装流程中，请选择安装。"
+    sleep 2
+    shon_online
 }
 
 shon_online() {
     echo -e "\033[1;34mApplev50基于xtao原始脚本修改，一键安装旧版人形和框架\033[0m"
     echo ""
+    echo -e "\033[1;32m新功能：支持为 PagerMaid 设置自定义名称，实现多开！\033[0m"
     echo -e "\033[1;34m改动：加入虚拟环境\033[0m"
     echo -e "\033[1;34m改动：安装PagerMaid版本为 1.4.12\033[0m"
     echo -e "\033[1;34m改动：安装Pyrogram版本为 2.0.124\033[0m"
@@ -648,17 +694,17 @@ shon_online() {
     echo "一键脚本出现任何问题请转手动搭建！ xtaolabs.com"
     echo ""
     echo "请选择您需要进行的操作:"
-    echo "  1) 安装 PagerMaid"
-    echo "  2) 卸载 PagerMaid"
-    echo "  3) 重新安装 PagerMaid"
-    echo "  4) 重新登陆 PagerMaid"
-    echo "  5) 关闭 PagerMaid"
-    echo "  6) 启动 PagerMaid"
-    echo "  7) 重新启动 PagerMaid"
-    echo "  8) 重新安装 PagerMaid 依赖"
+    echo "  1) 安装 PagerMaid (新)"
+    echo "  2) 卸载 PagerMaid (需输入名称)"
+    echo "  3) 重新安装 PagerMaid (需输入名称)"
+    echo "  4) 重新登陆 PagerMaid (需输入名称)"
+    echo "  5) 关闭 PagerMaid (需输入名称)"
+    echo "  6) 启动 PagerMaid (需输入名称)"
+    echo "  7) 重新启动 PagerMaid (需输入名称)"
+    echo "  8) (已废弃) 重新安装 PagerMaid 依赖"
     echo "  9) 退出脚本"
     echo ""
-    echo "     Version：1.0.1"
+    echo "     Version：1.1.0"
     echo ""
     echo -n "请输入编号: "
     read N
